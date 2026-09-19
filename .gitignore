@@ -19,3 +19,6 @@ Thumbs.db
 .neon
 .env.local
 node_modules/
+
+# Generated copy of production secrets for pasting into Streamlit Cloud
+streamlit_cloud_secrets.toml

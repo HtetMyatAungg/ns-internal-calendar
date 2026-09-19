@@ -29,6 +29,10 @@ BASE_OPTIONS = {
         "right": "dayGridMonth,timeGridWeek,listWeek",
     },
     "initialView": "timeGridWeek",
+    # UK dates. The component only bundles the "en" locale file, so we pass a locale
+    # object; FullCalendar then formats with the browser's Intl for "en-GB".
+    "locale": {"code": "en-gb", "week": {"dow": 1, "doy": 4}},
+    "dayHeaderFormat": {"weekday": "short", "day": "2-digit", "month": "2-digit", "omitCommas": True},
     "slotMinTime": "06:00:00",
     "slotMaxTime": "23:00:00",
     "firstDay": 1,

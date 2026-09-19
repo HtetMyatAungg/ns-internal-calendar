@@ -8,7 +8,7 @@ import streamlit as st
 
 from core import services
 from core.calendar_ui import MEMBER_PALETTE, legend, occurrence_to_fc, render_calendar
-from core.ui import current_user, week_start
+from core.ui import DATE_FORMAT, current_user, week_start
 
 user = current_user()
 
@@ -24,7 +24,7 @@ with st.container(horizontal=True, vertical_alignment="bottom"):
                               format_func=lambda i: by_id[i].name, key="team_members", width=420)
     show_titles = st.toggle("Show entry titles", value=False, key="team_titles",
                             help="Off: only the member name and category are shown, which keeps details private.")
-    week = st.date_input("Week of", value=week_start(date.today()), key="team_week")
+    week = st.date_input("Week of", value=week_start(date.today()), key="team_week", format=DATE_FORMAT)
 
 if not selected:
     st.info("Select at least one member.")
@@ -52,7 +52,7 @@ render_calendar(fc_events, key="team_cal", initial_view="timeGridWeek", initial_
 # --------------------------------------------------------------------------- #
 st.subheader("Find a time when everyone is free", anchor=False)
 with st.container(horizontal=True, vertical_alignment="bottom"):
-    day = st.date_input("Day", value=max(date.today(), anchor), key="team_free_day")
+    day = st.date_input("Day", value=max(date.today(), anchor), key="team_free_day", format=DATE_FORMAT)
     hours = st.slider("Between", 0, 24, (8, 20), key="team_hours", format="%d:00", width=300)
     min_len = st.selectbox("At least", [15, 30, 60, 90, 120], index=1, key="team_min",
                            format_func=lambda m: f"{m} min", width=140)

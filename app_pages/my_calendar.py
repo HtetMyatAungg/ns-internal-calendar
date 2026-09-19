@@ -10,7 +10,7 @@ from core import services
 from core.calendar_ui import event_to_fc, legend, occurrence_to_fc, render_calendar, visible_window
 from core.models import CATEGORIES, EVENT_COLOR, CalendarEntry
 from core.recurrence import describe_repeat
-from core.ui import current_user, datetime_inputs, fmt_range, next_round_hour
+from core.ui import DATE_FORMAT, current_user, datetime_inputs, fmt_range, next_round_hour
 
 user = current_user()
 WEEKDAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -47,7 +47,7 @@ def entry_form(existing: CalendarEntry | None, key: str) -> None:
         has_end = st.checkbox("Stop repeating on a date", key=f"{key}_hasend",
                               value=bool(existing and existing.repeat_until))
         if has_end:
-            repeat_until = st.date_input("Last day", key=f"{key}_until",
+            repeat_until = st.date_input("Last day", key=f"{key}_until", format=DATE_FORMAT,
                                          value=existing.repeat_until if existing and existing.repeat_until
                                          else start.date() + timedelta(weeks=12))
     notes = st.text_area("Notes", value=existing.notes if existing else "", key=f"{key}_notes", height=80)

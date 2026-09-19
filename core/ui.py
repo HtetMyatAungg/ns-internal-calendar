@@ -8,6 +8,9 @@ import streamlit as st
 
 from core.auth import CurrentUser
 
+# UK style for every date picker in the app.
+DATE_FORMAT = "DD/MM/YYYY"
+
 
 def current_user() -> CurrentUser:
     """The logged-in user. Pages are only reachable after login, so this never fails."""
@@ -24,13 +27,15 @@ def datetime_inputs(label_prefix: str, default_start: datetime, default_end: dat
     all_day = st.checkbox("All day", value=all_day_default, key=f"{key}_allday")
     c1, c2 = st.columns(2)
     with c1:
-        start_date = st.date_input(f"{label_prefix} start date", default_start.date(), key=f"{key}_sd")
+        start_date = st.date_input(f"{label_prefix} start date", default_start.date(), key=f"{key}_sd",
+                                   format=DATE_FORMAT)
         start_time = time(0, 0) if all_day else st.time_input(
             "Start time", default_start.time().replace(second=0, microsecond=0), key=f"{key}_st", step=900
         )
     with c2:
         end_default = (default_end - timedelta(days=1)).date() if all_day_default else default_end.date()
-        end_date = st.date_input(f"{label_prefix} end date", max(end_default, start_date), key=f"{key}_ed")
+        end_date = st.date_input(f"{label_prefix} end date", max(end_default, start_date), key=f"{key}_ed",
+                                 format=DATE_FORMAT)
         end_time = time(0, 0) if all_day else st.time_input(
             "End time", default_end.time().replace(second=0, microsecond=0), key=f"{key}_et", step=900
         )
