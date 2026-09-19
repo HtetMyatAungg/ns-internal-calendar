@@ -1,0 +1,12 @@
+{
+  "name": "ns-calendar-dev-db",
+  "private": true,
+  "description": "Local PostgreSQL (PGlite) for developing NS Internal Calendar without installing Postgres",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "^0.2.11"
+  }
+}

@@ -1,0 +1,18 @@
+# Secrets - never commit
+.streamlit/secrets.toml
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local dev database
+dev_db/node_modules/
+dev_db/data/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
