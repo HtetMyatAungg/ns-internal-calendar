@@ -10,7 +10,7 @@ from __future__ import annotations
 import streamlit as st
 
 from core import auth
-from core.config import load_settings
+from core.config import load_settings, redact_secrets
 from core.db import init_db
 
 st.set_page_config(page_title="NS Internal Calendar", page_icon=":material/calendar_month:", layout="wide")
@@ -24,7 +24,17 @@ def _startup() -> str:
     return settings.org_name
 
 
-org_name = _startup()
+try:
+    org_name = _startup()
+except Exception as exc:  # noqa: BLE001 - show a readable, secret-free diagnosis
+    st.error("Could not start: the app cannot reach its database.", icon=":material/database_off:")
+    st.code(redact_secrets(str(exc)), language="text")
+    st.markdown(
+        "Check the `[database].url` secret: it must be the full connection string, on one line, "
+        "inside double quotes, with the exact password (Neon passwords start with `npg_`). "
+        "After saving the secret the app reloads by itself."
+    )
+    st.stop()
 st.session_state.setdefault("user", None)
 
 

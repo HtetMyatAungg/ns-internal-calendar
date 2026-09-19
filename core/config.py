@@ -17,7 +17,15 @@ Expected secrets:
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
+
+_URL_PASSWORD = re.compile(r"(://[^:/@\s]+:)[^@\s]+@")
+
+
+def redact_secrets(text: str) -> str:
+    """Hide passwords embedded in connection URLs before showing text to users."""
+    return _URL_PASSWORD.sub(r"\1***@", text)
 
 
 @dataclass(frozen=True)
