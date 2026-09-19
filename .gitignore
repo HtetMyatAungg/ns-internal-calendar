@@ -16,3 +16,6 @@ dev_db/data/
 .idea/
 .DS_Store
 Thumbs.db
+.neon
+.env.local
+node_modules/
