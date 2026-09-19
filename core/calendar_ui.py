@@ -90,14 +90,16 @@ def render_calendar(events: list[dict], key: str, initial_view: str = "timeGridW
     return None
 
 
-def visible_window(anchor: date, view: str) -> tuple[datetime, datetime]:
-    """A generous window of data to load around the anchor date for a given view."""
-    if view == "dayGridMonth":
-        start = anchor.replace(day=1) - timedelta(days=7)
-        end = start + timedelta(days=7 * 7)
-    else:
-        start = anchor - timedelta(days=anchor.weekday() + 7)
-        end = start + timedelta(days=21)
+def preload_window(anchor: date | None = None, past_days: int = 180,
+                   future_days: int = 550) -> tuple[datetime, datetime]:
+    """Range of data to hand to the calendar widget.
+
+    Navigation (prev/next/month) happens in the browser without a rerun, so we
+    preload a wide range - about six months back and a full academic year ahead.
+    """
+    anchor = anchor or date.today()
+    start = anchor - timedelta(days=past_days)
+    end = anchor + timedelta(days=future_days)
     return datetime.combine(start, datetime.min.time()), datetime.combine(end, datetime.min.time())
 
 

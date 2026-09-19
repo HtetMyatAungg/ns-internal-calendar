@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta
+from datetime import date, time
 
 import streamlit as st
 
 from core import services
-from core.calendar_ui import MEMBER_PALETTE, legend, occurrence_to_fc, render_calendar
+from core.calendar_ui import MEMBER_PALETTE, legend, occurrence_to_fc, preload_window, render_calendar
 from core.ui import DATE_FORMAT, current_user, week_start
 
 user = current_user()
@@ -36,8 +36,7 @@ legend({by_id[i].name: colors[i] for i in selected})
 # Calendar with everyone overlaid
 # --------------------------------------------------------------------------- #
 anchor = week_start(week)
-window_start = datetime.combine(anchor - timedelta(days=14), time.min)
-window_end = datetime.combine(anchor + timedelta(days=28), time.min)
+window_start, window_end = preload_window(anchor)
 
 fc_events = []
 for occ in services.occurrences_for_members(selected, window_start, window_end):

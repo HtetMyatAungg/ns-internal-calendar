@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 import streamlit as st
 
 from core import services
-from core.calendar_ui import event_to_fc, legend, occurrence_to_fc, render_calendar, visible_window
+from core.calendar_ui import event_to_fc, legend, occurrence_to_fc, preload_window, render_calendar
 from core.feeds import FeedError
 from core.models import CATEGORIES, EVENT_COLOR, CalendarEntry
 from core.recurrence import describe_repeat
@@ -139,10 +139,7 @@ legend({**CATEGORIES, "Shared event": EVENT_COLOR})
 # --------------------------------------------------------------------------- #
 # Calendar
 # --------------------------------------------------------------------------- #
-anchor = st.session_state.get("mycal_anchor", date.today())
-window_start, window_end = visible_window(anchor, view or "timeGridWeek")
-window_start -= timedelta(days=60)
-window_end += timedelta(days=120)
+window_start, window_end = preload_window()
 
 fc_events = [occurrence_to_fc(o) for o in services.occurrences_for_members([user.id], window_start, window_end)]
 if show_events:
