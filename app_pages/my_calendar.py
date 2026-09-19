@@ -8,6 +8,7 @@ import streamlit as st
 
 from core import services
 from core.calendar_ui import event_to_fc, legend, occurrence_to_fc, render_calendar, visible_window
+from core.feeds import FeedError
 from core.models import CATEGORIES, EVENT_COLOR, CalendarEntry
 from core.recurrence import describe_repeat
 from core.ui import DATE_FORMAT, current_user, datetime_inputs, fmt_range, next_round_hour
@@ -82,6 +83,43 @@ def entry_form(existing: CalendarEntry | None, key: str) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# Imported iCal feeds (university timetable, Outlook/Google "publish" links, ...)
+# --------------------------------------------------------------------------- #
+def feed_manager() -> None:
+    st.markdown("**Subscribe to a calendar link**")
+    st.caption("Paste the iCal / ICS link your university or calendar app gives you "
+               "(the one meant for *Outlook on the web* or *Google Calendar*). "
+               "Its events will appear here automatically and stay up to date.")
+    with st.form("add_feed", border=False, clear_on_submit=True):
+        url = st.text_input("Calendar link", placeholder="https://.../ical/...  or  webcal://...")
+        c1, c2 = st.columns(2)
+        name = c1.text_input("Name (optional)", placeholder="e.g. Uni timetable")
+        category = c2.selectbox("Show as", list(CATEGORIES), index=list(CATEGORIES).index("Class"))
+        if st.form_submit_button("Subscribe", type="primary", icon=":material/add_link:"):
+            try:
+                with st.spinner("Checking the calendar link..."):
+                    feed = services.add_feed(user.id, url, name, category)
+            except FeedError as exc:
+                st.error(str(exc))
+            else:
+                st.toast(f"Subscribed to {feed.name}.", icon=":material/check_circle:")
+                st.rerun()
+
+    my_feeds = services.list_feeds(user.id)
+    if my_feeds:
+        st.markdown("**Your subscriptions**")
+    for feed in my_feeds:
+        count, error = services.feed_status(feed)
+        with st.container(horizontal=True, vertical_alignment="center"):
+            status = f":red[{error}]" if error else f"{count} events in the next 30 days"
+            st.markdown(f"**{feed.name}** · {feed.category}  \n{status}")
+            st.space()
+            if st.button("Remove", key=f"rm_feed_{feed.id}", icon=":material/link_off:"):
+                services.delete_feed(user.id, feed.id)
+                st.rerun()
+
+
+# --------------------------------------------------------------------------- #
 # Toolbar
 # --------------------------------------------------------------------------- #
 with st.container(horizontal=True, vertical_alignment="center"):
@@ -91,6 +129,8 @@ with st.container(horizontal=True, vertical_alignment="center"):
                                 key="mycal_view", label_visibility="collapsed")
     show_events = st.toggle("Show shared events", value=True, key="mycal_show_events")
     st.space()
+    with st.popover("Import timetable", icon=":material/rss_feed:"):
+        feed_manager()
     with st.popover("Add entry", icon=":material/add:", type="primary"):
         entry_form(None, key="new")
 
@@ -113,6 +153,10 @@ if clicked is not None:
     kind, item_id = clicked
     if kind == "entry":
         st.session_state.mycal_selected_entry = item_id
+    elif kind == "feed":
+        st.session_state.mycal_selected_entry = None
+        st.info("This comes from an imported calendar link, so it can't be edited here. "
+                "Use *Import timetable* to manage your subscriptions.", icon=":material/rss_feed:")
     else:
         st.session_state.mycal_selected_entry = None
         ev = services.get_event(item_id)

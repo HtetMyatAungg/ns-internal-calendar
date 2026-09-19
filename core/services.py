@@ -12,9 +12,11 @@ from datetime import date, datetime, time, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
+from core import feeds
 from core.auth import normalize_email
+from core.config import load_settings
 from core.db import session_scope
-from core.models import CalendarEntry, Event, Member, Rsvp
+from core.models import CalendarEntry, CalendarFeed, Event, Member, Rsvp
 from core.recurrence import Occurrence, expand_entries
 
 # --------------------------------------------------------------------------- #
@@ -168,7 +170,73 @@ def occurrences_for_members(member_ids: list[int], window_start: datetime,
             | ((CalendarEntry.start_at < window_end) & (CalendarEntry.end_at > window_start))
         )
         entries = list(db.scalars(stmt))
-    return expand_entries(entries, window_start, window_end)
+        member_feeds = list(db.scalars(select(CalendarFeed).where(CalendarFeed.member_id.in_(member_ids))))
+
+    occurrences = expand_entries(entries, window_start, window_end)
+    occurrences += feed_occurrences_for(member_feeds, window_start, window_end)
+    occurrences.sort(key=lambda o: o.start)
+    return occurrences
+
+
+# --------------------------------------------------------------------------- #
+# Imported iCal feeds (e.g. university timetables)
+# --------------------------------------------------------------------------- #
+
+
+def list_feeds(member_id: int) -> list[CalendarFeed]:
+    with session_scope() as db:
+        return list(db.scalars(select(CalendarFeed).where(CalendarFeed.member_id == member_id)
+                               .order_by(CalendarFeed.created_at)))
+
+
+def add_feed(member_id: int, url: str, name: str = "", category: str = "Class") -> CalendarFeed:
+    """Validate and download the feed once, then save it. Raises feeds.FeedError."""
+    url = feeds.normalize_feed_url(url)
+    data = feeds.download_feed(url)
+    name = name.strip() or feeds.feed_name_from_data(data, "Imported calendar")
+    with session_scope() as db:
+        if db.scalar(select(CalendarFeed).where(CalendarFeed.member_id == member_id, CalendarFeed.url == url)):
+            raise feeds.FeedError("You already subscribed to this calendar.")
+        feed = CalendarFeed(member_id=member_id, url=url, name=name[:120], category=category)
+        db.add(feed)
+        db.flush()
+        return feed
+
+
+def delete_feed(member_id: int, feed_id: int) -> None:
+    with session_scope() as db:
+        feed = db.get(CalendarFeed, feed_id)
+        if feed is not None and feed.member_id == member_id:
+            db.delete(feed)
+
+
+def feed_occurrences_for(member_feeds: list[CalendarFeed], window_start: datetime,
+                         window_end: datetime) -> list[Occurrence]:
+    """Occurrences from all given feeds. A broken feed is skipped (see feed_status)."""
+    tz_name = load_settings().timezone
+    # Feeds are queried by whole days (end exclusive); round out, then trim precisely.
+    first_day, last_day = window_start.date(), window_end.date() + timedelta(days=1)
+    result: list[Occurrence] = []
+    for feed in member_feeds:
+        try:
+            events = feeds.load_feed_events(feed.url, first_day, last_day, tz_name)
+        except feeds.FeedError:
+            continue
+        result += [
+            o for o in feeds.feed_occurrences(feed.id, feed.member_id, feed.category, events)
+            if o.start < window_end and o.end > window_start
+        ]
+    return result
+
+
+def feed_status(feed: CalendarFeed) -> tuple[int, str | None]:
+    """(number of events in the next 30 days, error message or None) for display."""
+    today = date.today()
+    try:
+        events = feeds.load_feed_events(feed.url, today, today + timedelta(days=30), load_settings().timezone)
+    except feeds.FeedError as exc:
+        return 0, str(exc)
+    return len(events), None
 
 
 # --------------------------------------------------------------------------- #

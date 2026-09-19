@@ -15,7 +15,12 @@ from core.models import CalendarEntry
 
 @dataclass(frozen=True)
 class Occurrence:
-    entry_id: int
+    """One block of time on a member's calendar.
+
+    Comes either from a personal entry (`entry_id` set) or from an imported
+    iCal feed (`feed_id` set). Feed occurrences are read-only in the UI.
+    """
+
     member_id: int
     title: str
     category: str
@@ -23,6 +28,9 @@ class Occurrence:
     end: datetime
     all_day: bool
     notes: str = ""
+    entry_id: int | None = None
+    feed_id: int | None = None
+    location: str = ""
 
 
 def expand_entry(entry: CalendarEntry, window_start: datetime, window_end: datetime) -> list[Occurrence]:

@@ -2,6 +2,7 @@
 
 Event ids are prefixed so a click can be traced back to the right table:
     "entry-<id>"  -> personal calendar entry
+    "feed-<id>"   -> imported iCal feed (read-only)
     "event-<id>"  -> shared event
 """
 
@@ -47,9 +48,11 @@ BASE_OPTIONS = {
 
 
 def occurrence_to_fc(occ: Occurrence, title: str | None = None, color: str | None = None) -> dict:
+    if title is None:
+        title = f"{occ.title} · {occ.location}" if occ.location else occ.title
     return {
-        "id": f"entry-{occ.entry_id}",
-        "title": title or occ.title,
+        "id": f"entry-{occ.entry_id}" if occ.entry_id is not None else f"feed-{occ.feed_id}",
+        "title": title,
         "start": _fmt(occ.start, occ.all_day),
         "end": _fmt(occ.end, occ.all_day),
         "allDay": occ.all_day,

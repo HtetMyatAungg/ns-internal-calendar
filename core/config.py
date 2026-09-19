@@ -9,6 +9,7 @@ Expected secrets:
     [app]
     org_name = "NS"
     admin_emails = ["someone@yourorg.onmicrosoft.com"]
+    timezone = "Europe/London"      # optional, used to convert imported iCal feeds
 
     [database]
     url = "postgresql://user:password@host/dbname?sslmode=require"
@@ -33,6 +34,7 @@ class Settings:
     database_url: str
     org_name: str = "NS"
     admin_emails: tuple[str, ...] = field(default_factory=tuple)
+    timezone: str = "Europe/London"
 
 
 def _read_secrets() -> dict:
@@ -66,4 +68,5 @@ def load_settings() -> Settings:
         database_url=url,
         org_name=os.environ.get("ORG_NAME") or app.get("org_name", "NS"),
         admin_emails=tuple(a.lower() for a in admins),
+        timezone=os.environ.get("APP_TIMEZONE") or app.get("timezone", "Europe/London"),
     )

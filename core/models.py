@@ -1,8 +1,10 @@
 """Database tables (SQLAlchemy ORM).
 
-Four tables:
+Five tables:
 - members          : who may log in (allowlist). Admins add rows here.
 - calendar_entries : a member's personal schedule (work shifts, classes, ...).
+- calendar_feeds   : external iCal/ICS subscriptions (e.g. a university timetable)
+                     whose events are shown on the member's calendar.
 - events           : shared events visible to everyone.
 - rsvps            : a member's response to a shared event.
 
@@ -59,6 +61,9 @@ class Member(Base):
     entries: Mapped[list["CalendarEntry"]] = relationship(
         back_populates="member", cascade="all, delete-orphan"
     )
+    feeds: Mapped[list["CalendarFeed"]] = relationship(
+        back_populates="member", cascade="all, delete-orphan"
+    )
 
     @property
     def name(self) -> str:
@@ -92,6 +97,20 @@ class CalendarEntry(Base):
     @property
     def weekday_list(self) -> list[int]:
         return [int(d) for d in self.weekdays.split(",") if d.strip() != ""]
+
+
+class CalendarFeed(Base):
+    __tablename__ = "calendar_feeds"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    member_id: Mapped[int] = mapped_column(ForeignKey("members.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    url: Mapped[str] = mapped_column(String(2000))
+    # Category used to colour the imported events.
+    category: Mapped[str] = mapped_column(String(40), default="Class")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    member: Mapped[Member] = relationship(back_populates="feeds")
 
 
 class Event(Base):

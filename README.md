@@ -7,6 +7,9 @@ other commitments, see each other's availability, and share events with RSVP.
   picks a password on first sign-in. Nobody else can get in.
 - **My calendar** - personal entries (work, class, personal, unavailable), one-off
   or repeating (daily / weekly on chosen days, optional end date).
+- **Import timetable** - subscribe to an iCal/ICS link (university timetable,
+  Outlook/Google "publish" link). Its events show up read-only on your calendar
+  and count as busy time for the team, refreshed automatically every 30 minutes.
 - **Shared events** - anyone can post an event; members RSVP going / maybe / can't go.
 - **Team availability** - everyone's busy blocks overlaid on one week view, plus a
   "find a time when everyone is free" helper.
@@ -31,10 +34,12 @@ app_pages/
 core/
   config.py             Reads settings from secrets / environment
   db.py                 Database engine + session helper + table creation
-  models.py             The four tables: members, calendar_entries, events, rsvps
+  models.py             The tables: members, calendar_entries, calendar_feeds, events, rsvps
   auth.py               Password hashing, login, first-time setup
   services.py           All reads/writes the pages use (the "business logic")
   recurrence.py         Expands repeating entries into calendar occurrences
+  feeds.py              Downloads and parses iCal/ICS subscription links
+certs/                  Extra public CA certificates for feed servers with broken chains
   calendar_ui.py        Draws the FullCalendar widget
   ui.py                 Small shared widgets/helpers
 tests/                  pytest suite (runs against a real PostgreSQL)
@@ -145,10 +150,21 @@ the same values as environment variables instead of secrets:
 
 ---
 
+## Importing a university timetable
+
+Most universities provide a personal iCal link ("Add to Outlook on the web /
+Google Calendar"). In the app: **My calendar -> Import timetable**, paste the
+link, choose a category, **Subscribe**. Imported items are read-only (edit them
+at the source); remove the subscription from the same place. The link contains
+a personal token, so treat it like a password - the app never shows it to others.
+
+If a feed fails with a certificate error, the server is probably missing its
+intermediate certificate; see `certs/README.md`.
+
 ## Notes and limits
 
-- Times are stored as naive local time (the organization's timezone). Everyone is
-  assumed to be in the same timezone.
+- Times are stored as naive local time in the organization's timezone
+  (`[app].timezone`, default `Europe/London`). Imported feeds are converted to it.
 - Sessions live in the browser tab; closing the tab signs you out.
 - Passwords are hashed with bcrypt. Only emails and display names are stored.
 - Schema changes: `init_db()` creates missing tables but does not alter existing
