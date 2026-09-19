@@ -15,7 +15,9 @@ const DATA_DIR = process.env.PGLITE_MEMORY ? undefined : path.join(__dirname, "d
 async function main() {
   const db = new PGlite(DATA_DIR);
   await db.waitReady;
-  const server = new PGLiteSocketServer({ db, host: "127.0.0.1", port: PORT });
+  // Several clients (the app's connection pool, tests, a SQL shell) may connect
+  // at once; queries are still executed one at a time internally.
+  const server = new PGLiteSocketServer({ db, host: "127.0.0.1", port: PORT, maxConnections: 20 });
   await server.start();
   console.log(`Dev PostgreSQL ready on 127.0.0.1:${PORT} (${DATA_DIR ? "data in " + DATA_DIR : "in-memory"})`);
 
